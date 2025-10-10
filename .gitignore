@@ -1,3 +1,43 @@
+# Created by https://www.toptal.com/developers/gitignore/api/node,react,vue,macos,windows,linux,vscode
+# Edit at https://www.toptal.com/developers/gitignore?templates=node,react,vue,macos,windows,linux,vscode
+
+### Linux ###
+*~
+
+# KDE directory preferences
+.directory
+
+# Linux trash folder which might appear on external disk
+.Trash-*
+
+### macOS ###
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must be committed
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+
+### Node ###
 # Logs
 logs
 *.log
@@ -5,6 +45,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
+.pnpm-debug.log*
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
@@ -25,7 +66,7 @@ coverage
 # nyc test coverage
 .nyc_output
 
-# Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
+# Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-temporary-files)
 .grunt
 
 # Bower dependency directory (https://bower.io/)
@@ -56,6 +97,12 @@ web_modules/
 # Optional stylelint cache
 .stylelintcache
 
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
 # Optional REPL history
 .node_repl_history
 
@@ -65,12 +112,14 @@ web_modules/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variable files
+# dotenv environment variables file
 .env
-.env.*
-!.env.example
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
 
-# parcel-bundler cache (https://parceljs.org/)
+# parcel-bundler cache files
 .cache
 .parcel-cache
 
@@ -78,9 +127,12 @@ web_modules/
 .next
 out
 
-# Nuxt.js build / generate output
+# Nuxt.js build output
 .nuxt
 dist
+
+# Docusaurus build output
+.docusaurus
 
 # Gatsby files
 .cache/
@@ -95,18 +147,6 @@ dist
 .temp
 .cache
 
-# Sveltekit cache directory
-.svelte-kit/
-
-# vitepress build output
-**/.vitepress/dist
-
-# vitepress cache directory
-**/.vitepress/cache
-
-# Docusaurus cache and generated files
-.docusaurus
-
 # Serverless directories
 .serverless/
 
@@ -114,10 +154,7 @@ dist
 .fusebox/
 
 # DynamoDB Local files
-.dynamodb/
-
-# Firebase cache directory
-.firebase/
+dynamodb/
 
 # TernJS port file
 .tern-port
@@ -125,15 +162,68 @@ dist
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
-# yarn v3
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
 .pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
 
-# Vite logs files
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
+### React ###
+.vscode/
+build/
+.DS_Store
+
+### VScode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+### Vue ###
+# Recommended template: https://github.com/github/gitignore/blob/main/Global/Vue.gitignore
+
+# Mac
+.DS_Store
+
+# IDEs
+.idea
+.vscode
+
+# Local
+local.js
+
+# Build files
+/dist
+/public
+
+### Windows ###
+# Windows thumbnail cache files
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+# End of https://www.toptal.com/developers/gitignore/api/node,react,vue,macos,windows,linux,vscode
