@@ -61,7 +61,7 @@ docker-compose up --build
 
 Die Anwendung sollte nun verfügbar sein:
 * **Frontend:** `http://localhost:3000`
-* **Backend API:** `http://localhost:8000`
+* **Backend API:** `http://localhost:3001`
 
 ### 🔐 Sicherheitsaspekte
 
