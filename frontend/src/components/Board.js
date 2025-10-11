@@ -1,20 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Column from './Column';
 
 const Board = () => {
-  const tasks = {
-    inProgress: [
-      { id: 1, title: 'UI für Kanban-Board erstellen', priority: 'Hoch' },
-      { id: 2, title: 'API-Endpunkt für Tasks hinzufügen', priority: 'Mittel' },
-    ],
-    done: [
-      { id: 3, title: 'Projekt initialisieren', priority: 'Hoch' },
-      { id: 4, title: 'Datenbank-Schema entwerfen', priority: 'Niedrig' },
-    ],
-    later: [
-      { id: 5, title: 'Authentifizierung implementieren', priority: 'Mittel' },
-    ],
-  };
+  const [tasks, setTasks] = useState({
+    inProgress: [],
+    done: [],
+    later: [],
+  });
+
+  useEffect(() => {
+    fetch('/api/tasks')
+      .then((response) => response.json())
+      .then((data) => {
+        const newTasks = {
+          inProgress: [],
+          done: [],
+          later: [],
+        };
+        data.forEach((task) => {
+          if (task.status === 'in_progress') {
+            newTasks.inProgress.push(task);
+          } else if (task.status === 'done') {
+            newTasks.done.push(task);
+          } else {
+            newTasks.later.push(task);
+          }
+        });
+        setTasks(newTasks);
+      })
+      .catch((error) => console.error('Error fetching tasks:', error));
+  }, []);
 
   return (
     <div className="board-container">

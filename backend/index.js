@@ -9,11 +9,11 @@ app.use(express.json());
 
 // PostgreSQL connection pool
 const pool = new Pool({
-  user: process.env.PGUSER || 'postgres',
-  host: process.env.PGHOST || 'db',
-  database: process.env.PGDATABASE || 'postgres',
-  password: process.env.PGPASSWORD || 'postgres',
-  port: process.env.PGPORT || 5432,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
 });
 
 // Function to create the tasks table if it doesn't exist
@@ -25,13 +25,27 @@ const createTable = async () => {
         id SERIAL PRIMARY KEY,
         title TEXT NOT NULL,
         description TEXT,
-        priority INTEGER,
+        priority VARCHAR(255),
         status TEXT NOT NULL
       )
     `);
     console.log('Table "tasks" is ready.');
+
+    // Seed the database
+    const res = await client.query('SELECT * FROM tasks');
+    if (res.rowCount === 0) {
+      await client.query(`
+        INSERT INTO tasks (title, priority, status) VALUES
+        ('UI für Kanban-Board erstellen', 'Hoch', 'in_progress'),
+        ('API-Endpunkt für Tasks hinzufügen', 'Mittel', 'in_progress'),
+        ('Projekt initialisieren', 'Hoch', 'done'),
+        ('Datenbank-Schema entwerfen', 'Niedrig', 'done'),
+        ('Authentifizierung implementieren', 'Mittel', 'later');
+      `);
+      console.log('Database seeded');
+    }
   } catch (err) {
-    console.error('Error creating table', err.stack);
+    console.error('Error creating or seeding table', err.stack);
   } finally {
     client.release();
   }
