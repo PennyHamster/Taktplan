@@ -91,6 +91,57 @@ app.post('/api/tasks', async (req, res) => {
   }
 });
 
+// Update an existing task
+app.put('/api/tasks/:id', async (req, res) => {
+  const { id } = req.params;
+  const { title, description, priority, status } = req.body;
+
+  try {
+    const client = await pool.connect();
+
+    // Build the update query dynamically
+    const updateFields = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (title !== undefined) {
+      updateFields.push(`title = $${paramCount++}`);
+      values.push(title);
+    }
+    if (description !== undefined) {
+      updateFields.push(`description = $${paramCount++}`);
+      values.push(description);
+    }
+    if (priority !== undefined) {
+      updateFields.push(`priority = $${paramCount++}`);
+      values.push(priority);
+    }
+    if (status !== undefined) {
+      updateFields.push(`status = $${paramCount++}`);
+      values.push(status);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ message: 'No fields to update' });
+    }
+
+    values.push(id);
+    const updateQuery = `UPDATE tasks SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+
+    const result = await client.query(updateQuery, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 // Start the server after ensuring the table is created
 app.listen(port, async () => {
   await createTable();
