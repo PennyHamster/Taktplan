@@ -70,13 +70,13 @@ app.get('/api/tasks', async (req, res) => {
     client.release();
   } catch (err) {
     console.error(err);
-    res.status(500).send('Server Error');
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
 // Create a new task
 app.post('/api/tasks', async (req, res) => {
-  const { title, description, priority, status } = req.body;
+  const { title, description, priority, status = 'in_progress' } = req.body;
   try {
     const client = await pool.connect();
     const result = await client.query(
@@ -87,7 +87,7 @@ app.post('/api/tasks', async (req, res) => {
     client.release();
   } catch (err) {
     console.error(err);
-    res.status(500).send('Server Error');
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
