@@ -142,6 +142,26 @@ app.put('/api/tasks/:id', async (req, res) => {
   }
 });
 
+// Delete a task
+app.delete('/api/tasks/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const client = await pool.connect();
+        const result = await client.query('DELETE FROM tasks WHERE id = $1', [id]);
+
+        if (result.rowCount === 0) {
+            client.release();
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        client.release();
+        res.status(204).send(); // No Content
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
 // Start the server after ensuring the table is created
 app.listen(port, async () => {
   await createTable();
