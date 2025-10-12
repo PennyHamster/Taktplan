@@ -1,9 +1,9 @@
 import React from 'react';
-import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { SortableContext } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
 import Card from './Card';
 
-const Column = ({ id, title, tasks }) => {
+const Column = ({ id, title, tasks, onEdit, onDelete }) => {
   const { setNodeRef } = useDroppable({ id });
 
   return (
@@ -13,9 +13,9 @@ const Column = ({ id, title, tasks }) => {
         {tasks.map((task) => (
           <Card
             key={task.id}
-            id={task.id}
-            title={task.title}
-            priority={task.priority}
+            task={task}
+            onEdit={onEdit}
+            onDelete={onDelete}
           />
         ))}
       </SortableContext>

@@ -1,19 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-const TaskForm = ({ onSave, onCancel }) => {
+const TaskForm = ({ onSave, onCancel, task }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState(1);
 
+  useEffect(() => {
+    if (task) {
+      setTitle(task.title);
+      setDescription(task.description);
+      setPriority(task.priority);
+    }
+  }, [task]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({ title, description, priority });
+    onSave({ id: task ? task.id : undefined, title, description, priority });
   };
 
   return (
     <div className="modal-overlay">
       <div className="modal-content">
-        <h2>Neue Aufgabe</h2>
+        <h2>{task ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'}</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Titel</label>
