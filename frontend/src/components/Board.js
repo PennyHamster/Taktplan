@@ -11,7 +11,7 @@ const Board = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    fetch('/api/tasks')
+    fetch(`${process.env.REACT_APP_API_URL}/api/tasks`)
       .then((response) => response.json())
       .then((data) => {
         const newTasks = {
@@ -42,7 +42,7 @@ const Board = () => {
   };
 
   const handleSaveTask = (taskData) => {
-    fetch('/api/tasks', {
+    fetch(`${process.env.REACT_APP_API_URL}/api/tasks`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
