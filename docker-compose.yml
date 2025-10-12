@@ -19,8 +19,6 @@ services:
     volumes:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
-    environment:
-      - REACT_APP_API_URL=http://backend:3001
     stdin_open: true
     tty: true
     depends_on:
