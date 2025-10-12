@@ -1,7 +1,13 @@
 const express = require('express');
 const { Pool } = require('pg');
+const cors = require('cors');
 
 const app = express();
+
+// Enable CORS for all routes
+app.use(cors({
+  origin: 'http://localhost:3000'
+}));
 const port = process.env.PORT || 3001;
 
 // Middleware to parse JSON bodies
