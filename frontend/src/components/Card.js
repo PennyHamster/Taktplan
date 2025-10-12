@@ -2,14 +2,14 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const Card = ({ id, title, priority }) => {
+const Card = ({ task, onEdit, onDelete }) => {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
-  } = useSortable({ id });
+  } = useSortable({ id: task.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -24,8 +24,19 @@ const Card = ({ id, title, priority }) => {
       {...listeners}
       className="card"
     >
-      <h4>{title}</h4>
-      <p>Priority: {priority}</p>
+      <div className="card-header">
+        <h4>{task.title}</h4>
+        <div className="card-actions">
+          <button onClick={() => onEdit(task)} className="icon-button">
+            ✏️
+          </button>
+          <button onClick={() => onDelete(task.id)} className="icon-button">
+            🗑️
+          </button>
+        </div>
+      </div>
+      <p>{task.description}</p>
+      <p>Priority: {task.priority}</p>
     </div>
   );
 };
