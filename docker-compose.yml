@@ -1,6 +1,6 @@
 version: '3.8'
 services:
-  backend:
+  api:
     build: ./backend
     ports:
       - "3001:3001"
@@ -22,7 +22,7 @@ services:
     stdin_open: true
     tty: true
     depends_on:
-      - backend
+      - api
 
   db:
     image: postgres:13
