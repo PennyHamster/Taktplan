@@ -22,8 +22,9 @@ const Card = ({ task, onEdit, onDelete }) => {
         <h4>{task.title}</h4>
         <div className="card-actions">
           <button
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
-              e.stopPropagation(); // Verhindert, dass das Drag-Event ausgelöst wird
+              e.stopPropagation();
               onEdit(task);
             }}
             className="icon-button"
@@ -31,8 +32,9 @@ const Card = ({ task, onEdit, onDelete }) => {
             ✏️
           </button>
           <button
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
-              e.stopPropagation(); // Verhindert, dass das Drag-Event ausgelöst wird
+              e.stopPropagation();
               onDelete(task.id);
             }}
             className="icon-button"
