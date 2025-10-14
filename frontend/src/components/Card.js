@@ -17,20 +17,26 @@ const Card = ({ task, onEdit, onDelete }) => {
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className="card"
-    >
-      <div className="card-header">
+    <div ref={setNodeRef} style={style} className="card">
+      <div className="card-header" {...attributes} {...listeners}>
         <h4>{task.title}</h4>
         <div className="card-actions">
-          <button onClick={() => onEdit(task)} className="icon-button">
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // Verhindert, dass das Drag-Event ausgelöst wird
+              onEdit(task);
+            }}
+            className="icon-button"
+          >
             ✏️
           </button>
-          <button onClick={() => onDelete(task.id)} className="icon-button">
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // Verhindert, dass das Drag-Event ausgelöst wird
+              onDelete(task.id);
+            }}
+            className="icon-button"
+          >
             🗑️
           </button>
         </div>
