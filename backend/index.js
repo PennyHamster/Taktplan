@@ -1,6 +1,8 @@
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
+const authRouter = require('./auth');
+const { authenticateToken } = require('./middleware');
 
 const app = express();
 
@@ -22,50 +24,52 @@ const pool = new Pool({
   port: process.env.DB_PORT,
 });
 
-// Function to create the tasks table if it doesn't exist
+// Function to create the tables if they don't exist
 const createTable = async () => {
   const client = await pool.connect();
   try {
+    // Create users table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL
+      )
+    `);
+    console.log('Table "users" is ready.');
+
+    // Create tasks table with a foreign key to users
     await client.query(`
       CREATE TABLE IF NOT EXISTS tasks (
         id SERIAL PRIMARY KEY,
         title TEXT NOT NULL,
         description TEXT,
         priority VARCHAR(255),
-        status TEXT NOT NULL
+        status TEXT NOT NULL,
+        "userId" INTEGER REFERENCES users(id) ON DELETE CASCADE
       )
     `);
     console.log('Table "tasks" is ready.');
 
-    // Seed the database
-    const res = await client.query('SELECT * FROM tasks');
-    if (res.rowCount === 0) {
-      await client.query(`
-        INSERT INTO tasks (title, priority, status) VALUES
-        ('UI für Kanban-Board erstellen', 'Hoch', 'in_progress'),
-        ('API-Endpunkt für Tasks hinzufügen', 'Mittel', 'in_progress'),
-        ('Projekt initialisieren', 'Hoch', 'done'),
-        ('Datenbank-Schema entwerfen', 'Niedrig', 'done'),
-        ('Authentifizierung implementieren', 'Mittel', 'later');
-      `);
-      console.log('Database seeded');
-    }
   } catch (err) {
-    console.error('Error creating or seeding table', err.stack);
+    console.error('Error creating tables', err.stack);
   } finally {
     client.release();
   }
 };
 
+app.use('/api/auth', authRouter);
+
 app.get('/', (req, res) => {
   res.send('Hello from the backend!');
 });
 
-// Get all tasks
-app.get('/api/tasks', async (req, res) => {
+// Get all tasks for the logged-in user
+app.get('/api/tasks', authenticateToken, async (req, res) => {
+  const { userId } = req.user;
   try {
     const client = await pool.connect();
-    const result = await client.query('SELECT * FROM tasks ORDER BY id ASC');
+    const result = await client.query('SELECT * FROM tasks WHERE "userId" = $1 ORDER BY id ASC', [userId]);
     res.json(result.rows);
     client.release();
   } catch (err) {
@@ -74,14 +78,15 @@ app.get('/api/tasks', async (req, res) => {
   }
 });
 
-// Create a new task
-app.post('/api/tasks', async (req, res) => {
+// Create a new task for the logged-in user
+app.post('/api/tasks', authenticateToken, async (req, res) => {
   const { title, description, priority, status = 'in_progress' } = req.body;
+  const { userId } = req.user;
   try {
     const client = await pool.connect();
     const result = await client.query(
-      'INSERT INTO tasks (title, description, priority, status) VALUES ($1, $2, $3, $4) RETURNING *',
-      [title, description, priority, status]
+      'INSERT INTO tasks (title, description, priority, status, "userId") VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [title, description, priority, status, userId]
     );
     res.status(201).json(result.rows[0]);
     client.release();
@@ -91,9 +96,10 @@ app.post('/api/tasks', async (req, res) => {
   }
 });
 
-// Update an existing task
-app.put('/api/tasks/:id', async (req, res) => {
+// Update an existing task belonging to the logged-in user
+app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
+  const { userId } = req.user;
   const { title, description, priority, status } = req.body;
 
   try {
@@ -126,12 +132,13 @@ app.put('/api/tasks/:id', async (req, res) => {
     }
 
     values.push(id);
-    const updateQuery = `UPDATE tasks SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+    values.push(userId);
+    const updateQuery = `UPDATE tasks SET ${updateFields.join(', ')} WHERE id = $${paramCount++} AND "userId" = $${paramCount} RETURNING *`;
 
     const result = await client.query(updateQuery, values);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Task not found' });
+      return res.status(404).json({ message: 'Task not found or not owned by user' });
     }
 
     res.json(result.rows[0]);
@@ -142,16 +149,17 @@ app.put('/api/tasks/:id', async (req, res) => {
   }
 });
 
-// Delete a task
-app.delete('/api/tasks/:id', async (req, res) => {
+// Delete a task belonging to the logged-in user
+app.delete('/api/tasks/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
+    const { userId } = req.user;
     try {
         const client = await pool.connect();
-        const result = await client.query('DELETE FROM tasks WHERE id = $1', [id]);
+        const result = await client.query('DELETE FROM tasks WHERE id = $1 AND "userId" = $2', [id, userId]);
 
         if (result.rowCount === 0) {
             client.release();
-            return res.status(404).json({ message: 'Task not found' });
+            return res.status(404).json({ message: 'Task not found or not owned by user' });
         }
 
         client.release();
