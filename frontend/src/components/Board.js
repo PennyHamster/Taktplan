@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import Column from './Column';
 import TaskForm from './TaskForm';
+import { getTasks, updateTask, createTask, deleteTask as apiDeleteTask } from '../api';
+
 
 const Board = () => {
   const [tasks, setTasks] = useState({
@@ -13,8 +15,7 @@ const Board = () => {
   const [editingTask, setEditingTask] = useState(null);
 
   useEffect(() => {
-    fetch(`/api/tasks`)
-      .then((response) => response.json())
+    getTasks()
       .then((data) => {
         const newTasks = {
           inProgress: [],
@@ -78,11 +79,7 @@ const Board = () => {
         newTasks[overColumn] = overItems;
       }
 
-      fetch(`/api/tasks/${activeId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: movedTask.status }),
-      }).catch((error) => {
+      updateTask(activeId, { status: movedTask.status }).catch((error) => {
         console.error('Error updating task status:', error);
         setTasks(prevTasks); // Revert on error
       });
@@ -103,21 +100,16 @@ const Board = () => {
 
   const handleSaveTask = (taskData) => {
     const { id, ...data } = taskData;
-    const method = id ? 'PUT' : 'POST';
-    const url = id ? `/api/tasks/${id}` : '/api/tasks';
+    const savePromise = id ? updateTask(id, data) : createTask(data);
 
-    fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-      .then((response) => response.json())
+    savePromise
       .then((savedTask) => {
         setTasks((prevTasks) => {
           const newTasks = { ...prevTasks };
           const statusKey = savedTask.status === 'in_progress' ? 'inProgress' : savedTask.status;
 
-          if (method === 'POST') {
+          const isNewTask = !id;
+          if (isNewTask) {
             if (newTasks[statusKey]) {
               newTasks[statusKey] = [...newTasks[statusKey], savedTask];
             }
@@ -142,7 +134,7 @@ const Board = () => {
 
   const handleDeleteTask = (taskId) => {
     if (window.confirm('Bist du sicher?')) {
-      fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
+      apiDeleteTask(taskId)
         .then(() => {
           setTasks((prevTasks) => {
             const newTasks = { ...prevTasks };
