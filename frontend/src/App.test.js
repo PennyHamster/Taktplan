@@ -23,7 +23,10 @@ describe('App component', () => {
   // Test 2: Authenticated user should see the board
   test('renders Board component for authenticated users', () => {
     // Set a mock token
-    localStorage.setItem('token', 'fake-jwt-token');
+    // The payload is { "role": "manager" }
+    const mockToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoibWFuYWdlciJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+    localStorage.setItem('token', mockToken);
 
     render(
       <MemoryRouter initialEntries={['/']}>

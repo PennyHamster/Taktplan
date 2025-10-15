@@ -1,21 +1,28 @@
 import React, { useState, useEffect } from 'react';
 
-const TaskForm = ({ onSave, onCancel, task }) => {
+const TaskForm = ({ onSave, onCancel, task, users, userRole }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState(1);
+  const [assigneeId, setAssigneeId] = useState('');
+
 
   useEffect(() => {
     if (task) {
       setTitle(task.title);
       setDescription(task.description);
       setPriority(task.priority);
+      setAssigneeId(task.assigneeId || '');
     }
   }, [task]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({ id: task ? task.id : undefined, title, description, priority });
+    const taskData = { id: task ? task.id : undefined, title, description, priority };
+    if (userRole === 'manager' && assigneeId) {
+      taskData.assigneeId = parseInt(assigneeId, 10);
+    }
+    onSave(taskData);
   };
 
   return (
@@ -50,6 +57,22 @@ const TaskForm = ({ onSave, onCancel, task }) => {
               <option value={3}>3</option>
             </select>
           </div>
+          {userRole === 'manager' && (
+            <div className="form-group">
+              <label>Zuweisen an</label>
+              <select
+                value={assigneeId}
+                onChange={(e) => setAssigneeId(e.target.value)}
+              >
+                <option value="">Niemand</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="form-actions">
             <button type="submit" className="button-primary">
               Speichern

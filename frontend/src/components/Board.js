@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { DndContext, closestCenter } from '@dnd-kit/core';
+import { jwtDecode } from 'jwt-decode';
 import Column from './Column';
 import TaskForm from './TaskForm';
-import { getTasks, updateTask, createTask, deleteTask as apiDeleteTask } from '../api';
+import { getTasks, updateTask, createTask, deleteTask as apiDeleteTask, getUsers } from '../api';
 
 
 const Board = () => {
@@ -11,17 +12,45 @@ const Board = () => {
     done: [],
     later: [],
   });
+  const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [initialLoad, setInitialLoad] = useState({ tasks: false, users: false });
 
+  // Decode token on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        setUserRole(decodedToken.role);
+      } catch (error) {
+        console.error("Invalid token:", error);
+      }
+    }
+  }, []);
+
+  // Fetch users if manager
+  useEffect(() => {
+    if (userRole === 'manager') {
+      getUsers()
+        .then(data => {
+          setUsers(data);
+          setInitialLoad(prev => ({ ...prev, users: true }));
+        })
+        .catch((error) => console.error('Error fetching users:', error));
+    } else {
+      // If not a manager, we don't need to wait for users
+      setInitialLoad(prev => ({ ...prev, users: true }));
+    }
+  }, [userRole]);
+
+  // Fetch and process tasks
   useEffect(() => {
     getTasks()
       .then((data) => {
-        const newTasks = {
-          inProgress: [],
-          done: [],
-          later: [],
-        };
+        const newTasks = { inProgress: [], done: [], later: [] };
         data.forEach((task) => {
           const statusKey = task.status === 'in_progress' ? 'inProgress' : task.status;
           if (newTasks[statusKey]) {
@@ -29,9 +58,34 @@ const Board = () => {
           }
         });
         setTasks(newTasks);
+        setInitialLoad(prev => ({ ...prev, tasks: true }));
       })
       .catch((error) => console.error('Error fetching tasks:', error));
   }, []);
+
+  // Enrich tasks with assignee info once all data is loaded
+  useEffect(() => {
+    if (initialLoad.tasks && initialLoad.users && users.length > 0) {
+      const enrichTasks = (taskArray) => {
+        return taskArray.map(task => {
+          if (task.assigneeId) {
+            const assignee = users.find(u => u.id === task.assigneeId);
+            if (assignee) {
+              return { ...task, assignee: { email: assignee.email } };
+            }
+          }
+          return task;
+        });
+      };
+
+      setTasks(prevTasks => ({
+        inProgress: enrichTasks(prevTasks.inProgress),
+        done: enrichTasks(prevTasks.done),
+        later: enrichTasks(prevTasks.later),
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialLoad, users]);
 
   const findColumnOfTask = (taskId) => {
     for (const columnName in tasks) {
@@ -104,27 +158,30 @@ const Board = () => {
 
     savePromise
       .then((savedTask) => {
+        // Enrich the saved task with assignee info before updating the state
+        if (savedTask.assigneeId && users.length > 0) {
+          const assignee = users.find(u => u.id === savedTask.assigneeId);
+          if (assignee) {
+            savedTask.assignee = { email: assignee.email };
+          }
+        }
+
         setTasks((prevTasks) => {
           const newTasks = { ...prevTasks };
           const statusKey = savedTask.status === 'in_progress' ? 'inProgress' : savedTask.status;
 
-          const isNewTask = !id;
-          if (isNewTask) {
-            if (newTasks[statusKey]) {
-              newTasks[statusKey] = [...newTasks[statusKey], savedTask];
-            }
-          } else {
-            // Remove from old column
+          // If updating, remove the old task from its column
+          if (id) {
             for (const col in newTasks) {
-              newTasks[col] = newTasks[col].filter(
-                (task) => task.id !== savedTask.id
-              );
-            }
-            // Add to new column
-            if (newTasks[statusKey]) {
-              newTasks[statusKey].push(savedTask);
+              newTasks[col] = newTasks[col].filter(task => task.id !== id);
             }
           }
+
+          // Add the new or updated task to the correct column
+          if (newTasks[statusKey]) {
+            newTasks[statusKey].push(savedTask);
+          }
+
           return newTasks;
         });
         handleCloseModal();
@@ -164,6 +221,8 @@ const Board = () => {
             onSave={handleSaveTask}
             onCancel={handleCloseModal}
             task={editingTask}
+            users={users}
+            userRole={userRole}
           />
         )}
         <div className="board">

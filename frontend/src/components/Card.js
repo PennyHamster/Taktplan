@@ -44,7 +44,10 @@ const Card = ({ task, onEdit, onDelete }) => {
         </div>
       </div>
       <p>{task.description}</p>
-      <p>Priority: {task.priority}</p>
+      <div className="card-footer">
+        <p>Priority: {task.priority}</p>
+        {task.assignee && <p className="assignee"> zugewiesen an: {task.assignee.email}</p>}
+      </div>
     </div>
   );
 };
