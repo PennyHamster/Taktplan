@@ -17,4 +17,11 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-module.exports = { authenticateToken };
+const authenticateManager = (req, res, next) => {
+    if (req.user.role !== 'manager') {
+        return res.status(403).json({ message: 'Forbidden: Requires manager role' });
+    }
+    next();
+}
+
+module.exports = { authenticateToken, authenticateManager };

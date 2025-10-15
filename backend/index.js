@@ -3,7 +3,7 @@ require('dotenv').config();
 const { Pool } = require('pg');
 const cors = require('cors');
 const authRouter = require('./auth');
-const { authenticateToken } = require('./middleware');
+const { authenticateToken, authenticateManager } = require('./middleware');
 
 const app = express();
 
@@ -34,7 +34,8 @@ const createTable = async () => {
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL
+        password_hash TEXT NOT NULL,
+        role VARCHAR(50) DEFAULT 'employee'
       )
     `);
     console.log('Table "users" is ready.');
@@ -47,7 +48,8 @@ const createTable = async () => {
         description TEXT,
         priority VARCHAR(255),
         status TEXT NOT NULL,
-        "userId" INTEGER REFERENCES users(id) ON DELETE CASCADE
+        "creatorId" INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        "assigneeId" INTEGER REFERENCES users(id) ON DELETE CASCADE
       )
     `);
     console.log('Table "tasks" is ready.');
@@ -65,12 +67,33 @@ app.get('/', (req, res) => {
   res.send('Hello from the backend!');
 });
 
-// Get all tasks for the logged-in user
-app.get('/api/tasks', authenticateToken, async (req, res) => {
-  const { userId } = req.user;
+// Get all users (manager only)
+app.get('/api/users', authenticateToken, authenticateManager, async (req, res) => {
   try {
     const client = await pool.connect();
-    const result = await client.query('SELECT * FROM tasks WHERE "userId" = $1 ORDER BY id ASC', [userId]);
+    // Exclude password_hash from the result
+    const result = await client.query('SELECT id, email, role FROM users ORDER BY id ASC');
+    res.json(result.rows);
+    client.release();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// Get all tasks for the logged-in user
+app.get('/api/tasks', authenticateToken, async (req, res) => {
+  const { userId, role } = req.user;
+  try {
+    const client = await pool.connect();
+    let result;
+    if (role === 'manager') {
+      // Managers get all tasks
+      result = await client.query('SELECT * FROM tasks ORDER BY id ASC');
+    } else {
+      // Employees get tasks assigned to them
+      result = await client.query('SELECT * FROM tasks WHERE "assigneeId" = $1 ORDER BY id ASC', [userId]);
+    }
     res.json(result.rows);
     client.release();
   } catch (err) {
@@ -81,18 +104,28 @@ app.get('/api/tasks', authenticateToken, async (req, res) => {
 
 // Create a new task for the logged-in user
 app.post('/api/tasks', authenticateToken, async (req, res) => {
-  const { title, description, priority, status = 'in_progress' } = req.body;
-  const { userId } = req.user;
+  const { title, description, priority, status = 'in_progress', assigneeId } = req.body;
+  const { userId: creatorId } = req.user; // Renaming for clarity
+
+  // The assigneeId is required when creating a task
+  if (!assigneeId) {
+    return res.status(400).json({ message: 'assigneeId is required' });
+  }
+
   try {
     const client = await pool.connect();
     const result = await client.query(
-      'INSERT INTO tasks (title, description, priority, status, "userId") VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [title, description, priority, status, userId]
+      'INSERT INTO tasks (title, description, priority, status, "creatorId", "assigneeId") VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [title, description, priority, status, creatorId, assigneeId]
     );
     res.status(201).json(result.rows[0]);
     client.release();
   } catch (err) {
     console.error(err);
+    // Foreign key constraint error
+    if (err.code === '23503') {
+        return res.status(404).json({ message: 'Assignee user not found.' });
+    }
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
@@ -100,8 +133,8 @@ app.post('/api/tasks', authenticateToken, async (req, res) => {
 // Update an existing task belonging to the logged-in user
 app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
-  const { userId } = req.user;
-  const { title, description, priority, status } = req.body;
+  const { userId, role } = req.user;
+  const { title, description, priority, status, assigneeId } = req.body;
 
   try {
     const client = await pool.connect();
@@ -127,25 +160,40 @@ app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
       updateFields.push(`status = $${paramCount++}`);
       values.push(status);
     }
+    if (assigneeId !== undefined) {
+      updateFields.push(`"assigneeId" = $${paramCount++}`);
+      values.push(assigneeId);
+    }
 
     if (updateFields.length === 0) {
       return res.status(400).json({ message: 'No fields to update' });
     }
 
     values.push(id);
-    values.push(userId);
-    const updateQuery = `UPDATE tasks SET ${updateFields.join(', ')} WHERE id = $${paramCount++} AND "userId" = $${paramCount} RETURNING *`;
+
+    let updateQuery;
+    // Managers can update any task, otherwise only the creator or assignee can update
+    if (role === 'manager') {
+        updateQuery = `UPDATE tasks SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+    } else {
+        values.push(userId);
+        updateQuery = `UPDATE tasks SET ${updateFields.join(', ')} WHERE id = $${paramCount++} AND ("creatorId" = $${paramCount} OR "assigneeId" = $${paramCount}) RETURNING *`;
+    }
 
     const result = await client.query(updateQuery, values);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Task not found or not owned by user' });
+      return res.status(404).json({ message: 'Task not found or you do not have permission to update it' });
     }
 
     res.json(result.rows[0]);
     client.release();
   } catch (err) {
     console.error(err);
+    // Foreign key constraint error
+    if (err.code === '23503') {
+        return res.status(404).json({ message: 'Assignee user not found.' });
+    }
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
@@ -153,14 +201,21 @@ app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
 // Delete a task belonging to the logged-in user
 app.delete('/api/tasks/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
-    const { userId } = req.user;
+    const { userId, role } = req.user;
     try {
         const client = await pool.connect();
-        const result = await client.query('DELETE FROM tasks WHERE id = $1 AND "userId" = $2', [id, userId]);
+
+        let result;
+        // Managers can delete any task, otherwise only the creator can delete
+        if (role === 'manager') {
+            result = await client.query('DELETE FROM tasks WHERE id = $1', [id]);
+        } else {
+            result = await client.query('DELETE FROM tasks WHERE id = $1 AND "creatorId" = $2', [id, userId]);
+        }
 
         if (result.rowCount === 0) {
             client.release();
-            return res.status(404).json({ message: 'Task not found or not owned by user' });
+            return res.status(404).json({ message: 'Task not found or you do not have permission to delete it' });
         }
 
         client.release();
