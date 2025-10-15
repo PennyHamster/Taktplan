@@ -52,3 +52,7 @@ export const deleteTask = (taskId) => {
         method: 'DELETE',
     });
 };
+
+export const getUsers = () => {
+    return request('/users');
+};
