@@ -83,8 +83,8 @@ app.get('/api/users', authenticateToken, authenticateManager, async (req, res) =
 
 // Get all tasks for the logged-in user
 app.get('/api/tasks', authenticateToken, async (req, res) => {
-  const { userId, role } = req.user;
   try {
+    const { userId, role } = req.user;
     const client = await pool.connect();
     let result;
     if (role === 'manager') {
