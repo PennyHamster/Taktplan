@@ -4,6 +4,8 @@ import Board from './components/Board';
 import Login from './components/Login';
 import Register from './components/Register';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
+import AdminPage from './components/AdminPage';
 import './App.css';
 
 function App() {
@@ -14,6 +16,9 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/" element={<ProtectedRoute />}>
           <Route path="/" element={<Board />} />
+        </Route>
+        <Route path="/admin" element={<AdminRoute />}>
+          <Route path="/admin" element={<AdminPage />} />
         </Route>
       </Routes>
     </div>
