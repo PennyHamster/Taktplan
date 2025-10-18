@@ -9,6 +9,7 @@ import { getTasks, getMyTasks, updateTask, createTask, deleteTask as apiDeleteTa
 
 const Board = () => {
   const navigate = useNavigate();
+  const token = localStorage.getItem('token');
   const [tasks, setTasks] = useState({
     inProgress: [],
     done: [],
@@ -240,21 +241,16 @@ const Board = () => {
       <div className="board-container">
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', backgroundColor: '#f8f9fa' }}>
             <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Taktplan</h1>
-            <div>
-                <button className="new-task-button" onClick={() => handleOpenModal()} style={{ marginRight: '10px' }}>
-                  + Neue Aufgabe
-                </button>
-                <button onClick={handleLogout} style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#6c757d',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                }}>
-                    Logout
-                </button>
-            </div>
+            {token && (
+                <div>
+                    <button className="new-task-button" onClick={() => handleOpenModal()} style={{ marginRight: '10px' }}>
+                      + Neue Aufgabe
+                    </button>
+                    <button onClick={handleLogout} className="logout-button">
+                        Logout
+                    </button>
+                </div>
+            )}
         </header>
         {isModalOpen && (
           <TaskForm
