@@ -24,4 +24,16 @@ const authenticateManager = (req, res, next) => {
     next();
 }
 
-module.exports = { authenticateToken, authenticateManager };
+const authenticateAdmin = (req, res, next) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Forbidden: Requires admin role' });
+        }
+        next();
+    } catch (error) {
+        // This will catch errors if req.user is not defined
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+}
+
+module.exports = { authenticateToken, authenticateManager, authenticateAdmin };
