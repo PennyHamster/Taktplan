@@ -14,20 +14,20 @@ const pool = new Pool({
 
 // Register a new user
 router.post('/register', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, role } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required' });
   }
 
+  let client;
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const client = await pool.connect();
+    client = await pool.connect();
     const result = await client.query(
-      'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email',
-      [email, hashedPassword]
+      'INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3) RETURNING id, email, role',
+      [email, hashedPassword, role || 'employee']
     );
-    client.release();
     res.status(201).json(result.rows[0]);
   } catch (err) {
     if (err.code === '23505') { // unique_violation
@@ -35,6 +35,10 @@ router.post('/register', async (req, res) => {
     }
     console.error(err);
     res.status(500).json({ message: 'Internal Server Error' });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
@@ -46,10 +50,10 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ message: 'Email and password are required' });
   }
 
+  let client;
   try {
-    const client = await pool.connect();
+    client = await pool.connect();
     const result = await client.query('SELECT * FROM users WHERE email = $1', [email]);
-    client.release();
 
     if (result.rows.length === 0) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -67,6 +71,10 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Internal Server Error' });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
