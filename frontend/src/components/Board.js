@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { jwtDecode } from 'jwt-decode';
 import Column from './Column';
@@ -243,6 +243,11 @@ const Board = () => {
             <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Taktplan</h1>
             {token && (
                 <div>
+                    {userRole === 'admin' && (
+                        <Link to="/admin" className="new-task-button" style={{ marginRight: '10px', textDecoration: 'none' }}>
+                            User Management
+                        </Link>
+                    )}
                     <button className="new-task-button" onClick={() => handleOpenModal()} style={{ marginRight: '10px' }}>
                       + Neue Aufgabe
                     </button>

@@ -60,3 +60,14 @@ export const deleteTask = (taskId) => {
 export const getUsers = () => {
     return request('/users');
 };
+
+export const getAdminUsers = () => {
+    return request('/admin/users');
+};
+
+export const updateUserRole = (userId, role) => {
+    return request(`/admin/users/${userId}/role`, {
+        method: 'PUT',
+        body: JSON.stringify({ role }),
+    });
+};
