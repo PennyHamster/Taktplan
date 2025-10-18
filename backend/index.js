@@ -3,7 +3,7 @@ require('dotenv').config();
 const { Pool } = require('pg');
 const cors = require('cors');
 const authRouter = require('./auth');
-const { authenticateToken, authenticateManager } = require('./middleware');
+const { authenticateToken, authenticateManager, authenticateAdmin } = require('./middleware');
 
 const app = express();
 
@@ -41,6 +41,13 @@ const createTable = async () => {
     await client.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'employee'
     `);
+    // Add a check constraint for the roles
+    await client.query(`
+        ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+    `);
+    await client.query(`
+        ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('employee', 'manager', 'admin'));
+    `);
     console.log('Table "users" is ready.');
 
     // Create tasks table with a foreign key to users
@@ -71,6 +78,56 @@ app.use('/api/auth', authRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello from the backend!');
+});
+
+// Admin endpoint to get all users
+app.get('/api/admin/users', authenticateToken, authenticateAdmin, async (req, res) => {
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT id, email, role FROM users ORDER BY id ASC');
+    res.json(result.rows);
+    client.release();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// Admin endpoint to update a user's role
+app.put('/api/admin/users/:id/role', authenticateToken, authenticateAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+
+  if (!role) {
+    return res.status(400).json({ message: 'Role is required' });
+  }
+
+  // Optional: Add validation to ensure the role is one of the allowed values
+  if (!['employee', 'manager', 'admin'].includes(role)) {
+    return res.status(400).json({ message: 'Invalid role specified' });
+  }
+
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, email, role',
+      [role, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    // Catch potential check constraint violation
+    if (err.code === '23514') { // check_violation
+        return res.status(400).json({ message: 'Invalid role specified' });
+    }
+    console.error(err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
 // Get all users (manager only)
