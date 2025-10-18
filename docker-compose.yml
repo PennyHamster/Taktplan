@@ -29,6 +29,8 @@ services:
     image: postgres:13
     env_file:
       - ./db.env
+    environment:
+      POSTGRES_DB: taktplan
     ports:
       - "5432:5432"
     volumes:
