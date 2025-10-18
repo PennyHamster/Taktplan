@@ -30,13 +30,13 @@ services:
     env_file:
       - ./db.env
     environment:
-      POSTGRES_DB: taktplan
+      POSTGRES_DB: taktplandb
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d taktplan"]
+      test: ["CMD-SHELL", "pg_isready -U user -d taktplandb"]
       interval: 10s
       timeout: 5s
       retries: 5
