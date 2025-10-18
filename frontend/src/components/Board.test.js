@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
 import { jwtDecode } from 'jwt-decode';
 import Board from './Board';
@@ -43,7 +44,7 @@ describe('Board for Manager', () => {
   });
 
   test('fetches all tasks and own tasks, then deduplicates', async () => {
-    render(<Board />);
+    render(<MemoryRouter><Board /></MemoryRouter>);
 
     await waitFor(() => {
       // Both APIs should be called for manager
@@ -68,7 +69,7 @@ describe('Board for Employee', () => {
   });
 
   test('fetches only own tasks', async () => {
-    render(<Board />);
+    render(<MemoryRouter><Board /></MemoryRouter>);
 
     await waitFor(() => {
       // Only getMyTasks should be called for employee
@@ -94,7 +95,7 @@ describe('General Board functionality', () => {
 
   test('deletes a task when delete button is clicked and confirmed', async () => {
     window.confirm = jest.fn(() => true);
-    render(<Board />);
+    render(<MemoryRouter><Board /></MemoryRouter>);
 
     // Wait for the task to be visible
     await screen.findByText('My Task 1');
