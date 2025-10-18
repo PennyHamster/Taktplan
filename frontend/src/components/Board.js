@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { jwtDecode } from 'jwt-decode';
 import Column from './Column';
@@ -7,6 +8,7 @@ import { getTasks, getMyTasks, updateTask, createTask, deleteTask as apiDeleteTa
 
 
 const Board = () => {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState({
     inProgress: [],
     done: [],
@@ -225,15 +227,35 @@ const Board = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
   return (
     <DndContext
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
       <div className="board-container">
-        <button className="new-task-button" onClick={() => handleOpenModal()}>
-          + Neue Aufgabe
-        </button>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', backgroundColor: '#f8f9fa' }}>
+            <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Taktplan</h1>
+            <div>
+                <button className="new-task-button" onClick={() => handleOpenModal()} style={{ marginRight: '10px' }}>
+                  + Neue Aufgabe
+                </button>
+                <button onClick={handleLogout} style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#6c757d',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                }}>
+                    Logout
+                </button>
+            </div>
+        </header>
         {isModalOpen && (
           <TaskForm
             onSave={handleSaveTask}
@@ -243,7 +265,7 @@ const Board = () => {
             userRole={userRole}
           />
         )}
-        <div className="board">
+        <div className="board" style={{paddingTop: '20px'}}>
           <Column
             id="inProgress"
             title="In Bearbeitung"
