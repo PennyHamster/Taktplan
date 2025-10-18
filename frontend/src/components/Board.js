@@ -50,8 +50,11 @@ const Board = () => {
   useEffect(() => {
     getTasks()
       .then((data) => {
+        // Deduplicate tasks by ID, crucial for manager view
+        const uniqueTasks = Array.from(new Map(data.map(task => [task.id, task])).values());
+
         const newTasks = { inProgress: [], done: [], later: [] };
-        data.forEach((task) => {
+        uniqueTasks.forEach((task) => {
           const statusKey = task.status === 'in_progress' ? 'inProgress' : task.status;
           if (newTasks[statusKey]) {
             newTasks[statusKey].push(task);
