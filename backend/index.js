@@ -34,9 +34,12 @@ const createTable = async () => {
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        role VARCHAR(50) DEFAULT 'employee'
+        password_hash TEXT NOT NULL
       )
+    `);
+    // Add the role column if it doesn't exist, to avoid breaking existing installations
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'employee'
     `);
     console.log('Table "users" is ready.');
 
