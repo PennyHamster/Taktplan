@@ -3,7 +3,7 @@ import { DndContext, closestCenter } from '@dnd-kit/core';
 import { jwtDecode } from 'jwt-decode';
 import Column from './Column';
 import TaskForm from './TaskForm';
-import { getTasks, updateTask, createTask, deleteTask as apiDeleteTask, getUsers } from '../api';
+import { getTasks, getMyTasks, updateTask, createTask, deleteTask as apiDeleteTask, getUsers } from '../api';
 
 
 const Board = () => {
@@ -46,15 +46,26 @@ const Board = () => {
     }
   }, [userRole]);
 
-  // Fetch and process tasks
+  // Fetch and process tasks based on user role
   useEffect(() => {
-    getTasks()
-      .then((data) => {
-        // Deduplicate tasks by ID, crucial for manager view
-        const uniqueTasks = Array.from(new Map(data.map(task => [task.id, task])).values());
+    if (!userRole) return; // Don't fetch until role is known
+
+    const fetchTasks = async () => {
+      try {
+        let allTasks = [];
+        if (userRole === 'manager') {
+          // Manager: fetch all tasks and tasks assigned to them
+          const [tasks, myTasks] = await Promise.all([getTasks(), getMyTasks()]);
+          // Combine and deduplicate
+          const combined = [...tasks, ...myTasks];
+          allTasks = Array.from(new Map(combined.map(task => [task.id, task])).values());
+        } else {
+          // Employee: fetch only their tasks
+          allTasks = await getMyTasks();
+        }
 
         const newTasks = { inProgress: [], done: [], later: [] };
-        uniqueTasks.forEach((task) => {
+        allTasks.forEach((task) => {
           const statusKey = task.status === 'in_progress' ? 'inProgress' : task.status;
           if (newTasks[statusKey]) {
             newTasks[statusKey].push(task);
@@ -62,9 +73,13 @@ const Board = () => {
         });
         setTasks(newTasks);
         setInitialLoad(prev => ({ ...prev, tasks: true }));
-      })
-      .catch((error) => console.error('Error fetching tasks:', error));
-  }, []);
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+      }
+    };
+
+    fetchTasks();
+  }, [userRole]);
 
   // Enrich tasks with assignee info once all data is loaded
   useEffect(() => {

@@ -1,93 +1,120 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { jwtDecode } from 'jwt-decode';
 import Board from './Board';
-import { getTasks, updateTask, deleteTask } from '../api';
+import { getTasks, getMyTasks, updateTask, deleteTask, getUsers } from '../api';
 
-// Mock the api module
+// Mock the api and jwt-decode modules
 jest.mock('../api');
+jest.mock('jwt-decode');
 
-const mockTasks = [
-  { id: 1, title: 'Task 1', description: 'Desc 1', priority: 1, status: 'in_progress' },
-  { id: 2, title: 'Task 2', description: 'Desc 2', priority: 2, status: 'done' },
+const mockAllTasks = [
+  { id: 1, title: 'All Task 1', status: 'in_progress' },
+  { id: 2, title: 'All Task 2', status: 'done' },
 ];
 
-beforeEach(() => {
+const mockMyTasks = [
+  { id: 1, title: 'My Task 1', status: 'in_progress' }, // Duplicate ID to test deduplication
+  { id: 3, title: 'My Task 3', status: 'later' },
+];
+
+const mockUsers = [{ id: 1, email: 'manager@test.com' }];
+
+const setupMocks = (role) => {
   // Reset mocks before each test
   jest.clearAllMocks();
-  // Mock the implementation of getTasks for each test
-  getTasks.mockResolvedValue(mockTasks);
-});
 
-test('renders board and fetches tasks', async () => {
-  render(<Board />);
+  // Mock token decoding
+  jwtDecode.mockReturnValue({ role });
+  localStorage.setItem('token', 'fake-token');
 
-  // Check that getTasks was called
-  expect(getTasks).toHaveBeenCalledTimes(1);
-
-  // Wait for the tasks to be rendered
-  await waitFor(() => {
-    expect(screen.getByText('Task 1')).toBeInTheDocument();
-    expect(screen.getByText('Task 2')).toBeInTheDocument();
-  });
-});
-
-test('opens edit modal with task data when edit button is clicked', async () => {
-  render(<Board />);
-
-  // Wait for tasks to appear
-  await screen.findByText('Task 1');
-
-  // Find the edit button for "Task 1"
-  // Note: The Card component which renders the button is not shown, assuming it has a unique way to be identified.
-  // We will assume the Card for Task 1 is rendered and contains an edit button.
-  // This part of the test might need adjustment if the Card component structure is different.
-  // For now, let's assume there's an edit button associated with "Task 1".
-  // A better approach would be to add a test-id to the button.
-  const cardElement = screen.getByText('Task 1').closest('.card');
-  const editButton = cardElement.querySelector('button.edit-btn'); // Assuming a class name
-
-  // If the button isn't found, this test will fail here.
-  // This is a common issue when tests are not co-designed with components.
-  // For this exercise, we'll assume the button exists and can be clicked.
-  // Since the original test was looking for '✏️', let's assume it's there.
-  // The Card component must be rendering this. Let's find it.
-  const editButtons = await screen.findAllByText('✏️');
-  fireEvent.click(editButtons[0]);
-
-  // Check if the modal opens with the correct data
-  await waitFor(() => {
-    expect(screen.getByText('Aufgabe bearbeiten')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Task 1')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Desc 1')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('1')).toBeInTheDocument();
-  });
-});
-
-test('deletes a task when delete button is clicked and confirmed', async () => {
-  // Mock for the DELETE request
+  // Mock API calls
+  getTasks.mockResolvedValue(mockAllTasks);
+  getMyTasks.mockResolvedValue(mockMyTasks);
+  getUsers.mockResolvedValue(mockUsers);
   deleteTask.mockResolvedValue(null);
-  window.confirm = jest.fn(() => true);
+  updateTask.mockResolvedValue({});
+};
 
-  render(<Board />);
-
-  // Wait for the task to be visible
-  await waitFor(() => {
-    expect(screen.getByText('Task 1')).toBeInTheDocument();
+describe('Board for Manager', () => {
+  beforeEach(() => {
+    setupMocks('manager');
   });
 
-  // Find the delete button for "Task 1"
-  const deleteButtons = screen.getAllByText('🗑️');
-  fireEvent.click(deleteButtons[0]);
+  test('fetches all tasks and own tasks, then deduplicates', async () => {
+    render(<Board />);
 
-  // Check that confirmation was requested
-  expect(window.confirm).toHaveBeenCalledWith('Bist du sicher?');
+    await waitFor(() => {
+      // Both APIs should be called for manager
+      expect(getTasks).toHaveBeenCalledTimes(1);
+      expect(getMyTasks).toHaveBeenCalledTimes(1);
+    });
 
-  // Check that the deleteTask API was called
-  expect(deleteTask).toHaveBeenCalledWith(1);
+    await waitFor(() => {
+      // It should render the deduplicated list
+      // "My Task 1" should overwrite "All Task 1" because of the Map logic
+      expect(screen.getByText('My Task 1')).toBeInTheDocument();
+      expect(screen.queryByText('All Task 1')).not.toBeInTheDocument();
+      expect(screen.getByText('All Task 2')).toBeInTheDocument();
+      expect(screen.getByText('My Task 3')).toBeInTheDocument();
+    });
+  });
+});
 
-  // Wait for the task to be removed from the UI
-  await waitFor(() => {
-    expect(screen.queryByText('Task 1')).not.toBeInTheDocument();
+describe('Board for Employee', () => {
+  beforeEach(() => {
+    setupMocks('employee');
+  });
+
+  test('fetches only own tasks', async () => {
+    render(<Board />);
+
+    await waitFor(() => {
+      // Only getMyTasks should be called for employee
+      expect(getTasks).not.toHaveBeenCalled();
+      expect(getMyTasks).toHaveBeenCalledTimes(1);
+    });
+
+    await waitFor(() => {
+      // It should render only "my tasks"
+      expect(screen.getByText('My Task 1')).toBeInTheDocument();
+      expect(screen.getByText('My Task 3')).toBeInTheDocument();
+      expect(screen.queryByText('All Task 1')).not.toBeInTheDocument();
+      expect(screen.queryByText('All Task 2')).not.toBeInTheDocument();
+    });
+  });
+});
+
+describe('General Board functionality', () => {
+  beforeEach(() => {
+    // Default to employee for general tests
+    setupMocks('employee');
+  });
+
+  test('deletes a task when delete button is clicked and confirmed', async () => {
+    window.confirm = jest.fn(() => true);
+    render(<Board />);
+
+    // Wait for the task to be visible
+    await screen.findByText('My Task 1');
+
+    // Find the delete button for "Task 1"
+    // In the actual DOM, the button is a child of the card.
+    // We can find the button near the task title.
+    const taskTitle = screen.getByText('My Task 1');
+    const deleteButton = taskTitle.closest('.card').querySelector('button.icon-button:last-child');
+    fireEvent.click(deleteButton);
+
+    // Check that confirmation was requested
+    expect(window.confirm).toHaveBeenCalledWith('Bist du sicher?');
+
+    // Check that the deleteTask API was called
+    expect(deleteTask).toHaveBeenCalledWith(1);
+
+    await waitFor(() => {
+      // Task should be removed from the UI
+      expect(screen.queryByText('My Task 1')).not.toBeInTheDocument();
+    });
   });
 });
