@@ -51,9 +51,12 @@ const createTable = async () => {
         description TEXT,
         priority VARCHAR(255),
         status TEXT NOT NULL,
-        "creatorId" INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        "assigneeId" INTEGER REFERENCES users(id) ON DELETE CASCADE
+        "creatorId" INTEGER REFERENCES users(id) ON DELETE CASCADE
       )
+    `);
+    // Add the assigneeId column if it doesn't exist, to avoid breaking existing installations
+    await client.query(`
+      ALTER TABLE tasks ADD COLUMN IF NOT EXISTS "assigneeId" INTEGER REFERENCES users(id) ON DELETE CASCADE
     `);
     console.log('Table "tasks" is ready.');
 

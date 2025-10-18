@@ -13,8 +13,11 @@ const TaskForm = ({ onSave, onCancel, task, users, userRole }) => {
       setDescription(task.description);
       setPriority(task.priority);
       setAssigneeId(task.assigneeId || '');
+    } else if (userRole === 'manager' && users.length > 0) {
+      // Default to the first user in the list for new tasks if manager
+      setAssigneeId(users[0].id);
     }
-  }, [task]);
+  }, [task, users, userRole]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
