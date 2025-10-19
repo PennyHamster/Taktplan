@@ -13,7 +13,7 @@ const TaskForm = ({ onSave, onCancel, task, users, userRole }) => {
       setDescription(task.description);
       setPriority(task.priority);
       setAssigneeId(task.assigneeId || '');
-    } else if (userRole === 'manager' && users.length > 0) {
+    } else if ((userRole === 'manager' || userRole === 'admin') && users.length > 0) {
       // Default to the first user in the list for new tasks if manager
       setAssigneeId(users[0].id);
     }
@@ -22,8 +22,8 @@ const TaskForm = ({ onSave, onCancel, task, users, userRole }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const taskData = { id: task ? task.id : undefined, title, description, priority };
-    if (userRole === 'manager' && assigneeId) {
-      taskData.assigneeId = parseInt(assigneeId, 10);
+    if (userRole === 'manager' || userRole === 'admin') {
+      taskData.assigneeId = assigneeId ? parseInt(assigneeId, 10) : null;
     }
     onSave(taskData);
   };
@@ -60,7 +60,7 @@ const TaskForm = ({ onSave, onCancel, task, users, userRole }) => {
               <option value={3}>3</option>
             </select>
           </div>
-          {userRole === 'manager' && (
+          {(userRole === 'manager' || userRole === 'admin') && (
             <div className="form-group">
               <label>Zuweisen an</label>
               <select

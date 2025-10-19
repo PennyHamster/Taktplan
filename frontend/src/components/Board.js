@@ -38,7 +38,7 @@ const Board = () => {
 
   // Fetch users if manager
   useEffect(() => {
-    if (userRole === 'manager') {
+    if (userRole === 'manager' || userRole === 'admin') {
       getUsers()
         .then(data => {
           setUsers(data);
