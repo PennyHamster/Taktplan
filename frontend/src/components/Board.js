@@ -23,33 +23,34 @@ const Board = () => {
   const [initialLoad, setInitialLoad] = useState({ tasks: false, users: false });
   const [activeTask, setActiveTask] = useState(null);
 
-  // Decode token on mount
+  // Decode token and fetch initial data on mount
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
         const decodedToken = jwtDecode(token);
-        setUserRole(decodedToken.role);
+        const role = decodedToken.role;
+        setUserRole(role);
+
+        if (role === 'manager' || role === 'admin') {
+          getUsers()
+            .then(data => {
+              setUsers(data);
+              setInitialLoad(prev => ({ ...prev, users: true }));
+            })
+            .catch((error) => console.error('Error fetching users:', error));
+        } else {
+          // If not a manager, we don't need to wait for users
+          setInitialLoad(prev => ({ ...prev, users: true }));
+        }
       } catch (error) {
         console.error("Invalid token:", error);
+        // Handle invalid token, maybe logout user
+        localStorage.removeItem('token');
+        navigate('/login');
       }
     }
-  }, []);
-
-  // Fetch users if manager
-  useEffect(() => {
-    if (userRole === 'manager' || userRole === 'admin') {
-      getUsers()
-        .then(data => {
-          setUsers(data);
-          setInitialLoad(prev => ({ ...prev, users: true }));
-        })
-        .catch((error) => console.error('Error fetching users:', error));
-    } else {
-      // If not a manager, we don't need to wait for users
-      setInitialLoad(prev => ({ ...prev, users: true }));
-    }
-  }, [userRole]);
+  }, [navigate]);
 
   // Fetch and process tasks based on user role
   useEffect(() => {
