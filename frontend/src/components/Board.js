@@ -198,6 +198,8 @@ const Board = () => {
   };
 
   const handleSaveTask = (taskData) => {
+    // The TaskForm component is responsible for formatting assigneeId (int or null).
+    // We just need to ensure all valid properties are passed along.
     const { id, ...data } = taskData;
     const savePromise = id ? updateTask(id, data) : createTask(data);
 
