@@ -29,11 +29,11 @@ const request = async (url, options = {}) => {
     return response.json();
 };
 
-export const getTasks = () => { // For managers: gets all tasks
+export const getTasks = () => {
     return request('/tasks');
 };
 
-export const getMyTasks = () => { // For all users: gets their assigned tasks
+export const getMyTasks = () => {
     return request('/tasks/my-tasks');
 };
 
