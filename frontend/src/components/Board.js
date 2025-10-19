@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { DndContext, closestCenter } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core';
 import { jwtDecode } from 'jwt-decode';
 import Column from './Column';
+import Card from './Card';
 import TaskForm from './TaskForm';
 import { getTasks, getMyTasks, updateTask, createTask, deleteTask as apiDeleteTask, getUsers } from '../api';
 
@@ -20,6 +21,7 @@ const Board = () => {
   const [editingTask, setEditingTask] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [initialLoad, setInitialLoad] = useState({ tasks: false, users: false });
+  const [activeTask, setActiveTask] = useState(null);
 
   // Decode token on mount
   useEffect(() => {
@@ -108,6 +110,16 @@ const Board = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialLoad, users]);
 
+  const findTask = (taskId) => {
+    for (const column of Object.values(tasks)) {
+        const task = column.find(t => t.id === taskId);
+        if (task) {
+            return task;
+        }
+    }
+    return null;
+  };
+
   const findColumnOfTask = (taskId) => {
     for (const columnName in tasks) {
       if (tasks[columnName].some((task) => task.id === taskId)) {
@@ -117,7 +129,14 @@ const Board = () => {
     return null;
   };
 
+  const handleDragStart = (event) => {
+    const { active } = event;
+    const task = findTask(active.id);
+    setActiveTask(task);
+  };
+
   const handleDragEnd = (event) => {
+    setActiveTask(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -148,8 +167,13 @@ const Board = () => {
         newTasks[activeColumn] = activeItems;
       } else {
         const overItems = [...(newTasks[overColumn] || [])];
-        const overIndex = overItems.findIndex((task) => task.id === overId);
-        overItems.splice(overIndex >= 0 ? overIndex : overItems.length, 0, movedTask);
+        // If dropping on a card, find its index, otherwise append to the end
+        const overIndex = overId in newTasks ? -1 : overItems.findIndex(task => task.id === overId);
+        if (overIndex !== -1) {
+            overItems.splice(overIndex, 0, movedTask);
+        } else {
+            overItems.push(movedTask);
+        }
         newTasks[activeColumn] = activeItems;
         newTasks[overColumn] = overItems;
       }
@@ -236,6 +260,7 @@ const Board = () => {
   return (
     <DndContext
       collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <div className="board-container">
@@ -289,6 +314,9 @@ const Board = () => {
             onDelete={handleDeleteTask}
           />
         </div>
+        <DragOverlay>
+            {activeTask ? <Card task={activeTask} onEdit={() => {}} onDelete={() => {}} /> : null}
+        </DragOverlay>
       </div>
     </DndContext>
   );
