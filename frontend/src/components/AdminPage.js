@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { getAdminUsers, updateUserRole } from '../api';
 
 const AdminPage = () => {
@@ -38,7 +39,8 @@ const AdminPage = () => {
 
     return (
         <div style={{ padding: '20px' }}>
-            <h2>User Management</h2>
+            <Link to="/">{'< Back to Board'}</Link>
+            <h2 style={{ marginTop: '20px' }}>User Management</h2>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                     <tr>
