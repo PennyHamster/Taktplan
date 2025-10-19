@@ -144,8 +144,20 @@ app.get('/api/users', authenticateToken, authenticateManager, async (req, res) =
   }
 });
 
+app.get('/api/tasks', authenticateToken, authenticateManager, async (req, res) => {
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT * FROM tasks ORDER BY id ASC');
+    res.json(result.rows);
+    client.release();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 // Get all tasks for the logged-in user
-app.get('/api/tasks', authenticateToken, async (req, res) => {
+app.get('/api/tasks/my-tasks', authenticateToken, async (req, res) => {
   try {
     const { userId, role } = req.user;
     const client = await pool.connect();

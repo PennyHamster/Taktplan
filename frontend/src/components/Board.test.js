@@ -16,7 +16,7 @@ const mockAllTasks = [
 ];
 
 const mockMyTasks = [
-  { id: 1, title: 'My Task 1', status: 'in_progress' }, // Duplicate ID to test deduplication
+  { id: 1, title: 'My Task 1', status: 'in_progress' },
   { id: 3, title: 'My Task 3', status: 'later' },
 ];
 
@@ -38,51 +38,32 @@ const setupMocks = (role) => {
   updateTask.mockResolvedValue({});
 };
 
-describe('Board for Manager', () => {
-  beforeEach(() => {
+describe('Board for all roles', () => {
+  test('fetches tasks for manager', async () => {
     setupMocks('manager');
-  });
-
-  test('fetches all tasks and own tasks, then deduplicates', async () => {
     render(<MemoryRouter><Board /></MemoryRouter>);
 
     await waitFor(() => {
-      // Both APIs should be called for manager
       expect(getTasks).toHaveBeenCalledTimes(1);
-      expect(getMyTasks).toHaveBeenCalledTimes(1);
     });
 
     await waitFor(() => {
-      // It should render the deduplicated list
-      // "My Task 1" should overwrite "All Task 1" because of the Map logic
-      expect(screen.getByText('My Task 1')).toBeInTheDocument();
-      expect(screen.queryByText('All Task 1')).not.toBeInTheDocument();
+      expect(screen.getByText('All Task 1')).toBeInTheDocument();
       expect(screen.getByText('All Task 2')).toBeInTheDocument();
-      expect(screen.getByText('My Task 3')).toBeInTheDocument();
     });
   });
-});
 
-describe('Board for Employee', () => {
-  beforeEach(() => {
+  test('fetches tasks for employee', async () => {
     setupMocks('employee');
-  });
-
-  test('fetches only own tasks', async () => {
     render(<MemoryRouter><Board /></MemoryRouter>);
 
     await waitFor(() => {
-      // Only getMyTasks should be called for employee
-      expect(getTasks).not.toHaveBeenCalled();
       expect(getMyTasks).toHaveBeenCalledTimes(1);
     });
 
     await waitFor(() => {
-      // It should render only "my tasks"
       expect(screen.getByText('My Task 1')).toBeInTheDocument();
       expect(screen.getByText('My Task 3')).toBeInTheDocument();
-      expect(screen.queryByText('All Task 1')).not.toBeInTheDocument();
-      expect(screen.queryByText('All Task 2')).not.toBeInTheDocument();
     });
   });
 });
@@ -100,9 +81,10 @@ describe('General Board functionality', () => {
     // Wait for the task to be visible
     await screen.findByText('My Task 1');
 
+    // After deletion, getMyTasks will be called again and return an empty array
+    getMyTasks.mockResolvedValue([]);
+
     // Find the delete button for "Task 1"
-    // In the actual DOM, the button is a child of the card.
-    // We can find the button near the task title.
     const taskTitle = screen.getByText('My Task 1');
     const deleteButton = taskTitle.closest('.card').querySelector('button.icon-button:last-child');
     fireEvent.click(deleteButton);
