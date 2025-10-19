@@ -9,15 +9,19 @@ const Card = ({ task, onEdit, onDelete }) => {
     setNodeRef,
     transform,
     transition,
+    isDragging,
   } = useSortable({ id: task.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.5 : 1,
   };
 
+  const cardClasses = `card ${isDragging ? 'dragging' : ''}`;
+
   return (
-    <div ref={setNodeRef} style={style} className="card">
+    <div ref={setNodeRef} style={style} className={cardClasses}>
       <div className="card-header" {...attributes} {...listeners}>
         <h4>{task.title}</h4>
         <div className="card-actions">

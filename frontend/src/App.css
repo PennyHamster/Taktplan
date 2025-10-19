@@ -97,6 +97,12 @@ body {
   box-shadow: 0 1px 0 rgba(9,30,66,.25);
   padding: 10px;
   margin-bottom: 8px;
+  user-select: none;
+}
+
+.card.dragging {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transform: rotate(3deg);
 }
 
 .card h4 {
