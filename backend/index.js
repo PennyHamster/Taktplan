@@ -150,8 +150,8 @@ app.get('/api/tasks', authenticateToken, async (req, res) => {
     const { userId, role } = req.user;
     const client = await pool.connect();
     let result;
-    if (role === 'manager') {
-      // Managers get all tasks
+    if (role === 'manager' || role === 'admin') {
+      // Managers and admins get all tasks
       result = await client.query('SELECT * FROM tasks ORDER BY id ASC');
     } else {
       // Employees get tasks assigned to them

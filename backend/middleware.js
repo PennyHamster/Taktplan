@@ -18,8 +18,8 @@ const authenticateToken = (req, res, next) => {
 };
 
 const authenticateManager = (req, res, next) => {
-    if (req.user.role !== 'manager') {
-        return res.status(403).json({ message: 'Forbidden: Requires manager role' });
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Forbidden: Requires manager or admin role' });
     }
     next();
 }
