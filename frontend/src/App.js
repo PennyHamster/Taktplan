@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import Board from './components/Board';
 import Login from './components/Login';
@@ -23,7 +23,6 @@ const MainLayout = ({ children, userRole, handleLogout }) => (
 function App() {
   const { theme } = useContext(ThemeContext);
   const navigate = useNavigate();
-  const location = useLocation();
   const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
