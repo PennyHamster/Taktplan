@@ -7,6 +7,22 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root {
+  --background-color-light: #f4f5f7;
+  --text-color-light: #172b4d;
+  --card-background-light: #ffffff;
+  --column-background-light: #ebecf0;
+  --button-background-light: #0079bf;
+  --button-text-light: #ffffff;
+
+  --background-color-dark: #1d2125;
+  --text-color-dark: #d1d2d3;
+  --card-background-dark: #282e33;
+  --column-background-dark: #343a40;
+  --button-background-dark: #005a8c;
+  --button-text-dark: #ffffff;
+}
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;

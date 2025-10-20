@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import App from './App';
+import { ThemeProvider } from './ThemeContext';
 
 describe('App component', () => {
   beforeEach(() => {
@@ -11,7 +12,9 @@ describe('App component', () => {
   test('renders Login page for unauthenticated users', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
-        <App />
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>
       </MemoryRouter>
     );
     // The Board should not be visible
@@ -30,7 +33,9 @@ describe('App component', () => {
 
     render(
       <MemoryRouter initialEntries={['/']}>
-        <App />
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>
       </MemoryRouter>
     );
 
