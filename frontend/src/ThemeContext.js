@@ -1,6 +1,9 @@
 import React, { createContext, useState, useMemo, useEffect } from 'react';
 
-export const ThemeContext = createContext();
+export const ThemeContext = createContext({
+  theme: 'light',
+  toggleTheme: () => console.warn('toggleTheme called outside of ThemeProvider'),
+});
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
