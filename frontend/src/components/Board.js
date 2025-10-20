@@ -1,19 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core';
-import { jwtDecode } from 'jwt-decode';
 import Column from './Column';
 import Card from './Card';
 import TaskForm from './TaskForm';
 import { getTasks, getMyTasks, updateTask, createTask, deleteTask as apiDeleteTask, getUsers } from '../api';
 
-const Board = () => {
+const Board = ({ userRole }) => {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState({ inProgress: [], done: [], later: [] });
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
-  const [userRole, setUserRole] = useState(null);
   const [activeTask, setActiveTask] = useState(null);
 
   const enrichTasksWithAssignee = (tasks, users) => {
@@ -38,6 +36,7 @@ const Board = () => {
   };
 
   const fetchData = useCallback(async (role) => {
+    if (!role) return;
     try {
       let fetchedUsers = [];
       if (role === 'manager' || role === 'admin') {
@@ -59,21 +58,8 @@ const Board = () => {
   }, [navigate]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const decodedToken = jwtDecode(token);
-        setUserRole(decodedToken.role);
-        fetchData(decodedToken.role);
-      } catch (error) {
-        console.error("Invalid token:", error);
-        localStorage.removeItem('token');
-        navigate('/login');
-      }
-    } else {
-      navigate('/login');
-    }
-  }, [fetchData, navigate]);
+    fetchData(userRole);
+  }, [userRole, fetchData]);
 
   const findTask = (taskId) => {
     for (const column of Object.values(tasks)) {
@@ -166,11 +152,6 @@ const Board = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
-
   return (
     <DndContext
       collisionDetection={closestCenter}
@@ -178,21 +159,10 @@ const Board = () => {
       onDragEnd={handleDragEnd}
     >
       <div className="board-container">
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', backgroundColor: '#f8f9fa' }}>
-            <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Taktplan</h1>
-            <div>
-                {userRole === 'admin' && (
-                    <Link to="/admin" className="new-task-button" style={{ marginRight: '10px', textDecoration: 'none' }}>
-                        User Management
-                    </Link>
-                )}
-                <button className="new-task-button" onClick={() => handleOpenModal()} style={{ marginRight: '10px' }}>
-                  + Neue Aufgabe
-                </button>
-                <button onClick={handleLogout} className="logout-button">
-                    Logout
-                </button>
-            </div>
+        <header className="board-header">
+          <button className="new-task-button" onClick={() => handleOpenModal()}>
+            + Neue Aufgabe
+          </button>
         </header>
         {isModalOpen && (
           <TaskForm

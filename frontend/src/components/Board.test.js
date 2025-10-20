@@ -2,13 +2,11 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
-import { jwtDecode } from 'jwt-decode';
 import Board from './Board';
 import { getTasks, getMyTasks, updateTask, deleteTask, getUsers } from '../api';
 
-// Mock the api and jwt-decode modules
+// Mock the api module
 jest.mock('../api');
-jest.mock('jwt-decode');
 
 const mockAllTasks = [
   { id: 1, title: 'All Task 1', status: 'in_progress' },
@@ -22,13 +20,9 @@ const mockMyTasks = [
 
 const mockUsers = [{ id: 1, email: 'manager@test.com' }];
 
-const setupMocks = (role) => {
+const setupMocks = () => {
   // Reset mocks before each test
   jest.clearAllMocks();
-
-  // Mock token decoding
-  jwtDecode.mockReturnValue({ role });
-  localStorage.setItem('token', 'fake-token');
 
   // Mock API calls
   getTasks.mockResolvedValue(mockAllTasks);
@@ -39,9 +33,11 @@ const setupMocks = (role) => {
 };
 
 describe('Board for all roles', () => {
+  beforeEach(() => {
+    setupMocks();
+  });
   test('fetches tasks for manager', async () => {
-    setupMocks('manager');
-    render(<MemoryRouter><Board /></MemoryRouter>);
+    render(<MemoryRouter><Board userRole="manager" /></MemoryRouter>);
 
     await waitFor(() => {
       expect(getTasks).toHaveBeenCalledTimes(1);
@@ -54,8 +50,7 @@ describe('Board for all roles', () => {
   });
 
   test('fetches tasks for employee', async () => {
-    setupMocks('employee');
-    render(<MemoryRouter><Board /></MemoryRouter>);
+    render(<MemoryRouter><Board userRole="employee" /></MemoryRouter>);
 
     await waitFor(() => {
       expect(getMyTasks).toHaveBeenCalledTimes(1);
@@ -70,13 +65,12 @@ describe('Board for all roles', () => {
 
 describe('General Board functionality', () => {
   beforeEach(() => {
-    // Default to employee for general tests
-    setupMocks('employee');
+    setupMocks();
   });
 
   test('deletes a task when delete button is clicked and confirmed', async () => {
     window.confirm = jest.fn(() => true);
-    render(<MemoryRouter><Board /></MemoryRouter>);
+    render(<MemoryRouter><Board userRole="employee" /></MemoryRouter>);
 
     // Wait for the task to be visible
     await screen.findByText('My Task 1');

@@ -6,24 +6,50 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root {
+  --sidebar-bg-light: #f8f9fa;
+  --sidebar-text-color-light: #333;
+  --sidebar-hover-bg-light: #e9ecef;
+}
+
 .App.light {
+  --sidebar-bg: var(--sidebar-bg-light);
+  --sidebar-text-color: var(--sidebar-text-color-light);
+  --sidebar-hover-bg: var(--sidebar-hover-bg-light);
   background-color: var(--background-color-light);
   color: var(--text-color-light);
 }
 
 .App.dark {
+  --sidebar-bg: var(--sidebar-bg-dark);
+  --sidebar-text-color: var(--sidebar-text-color-dark);
+  --sidebar-hover-bg: var(--sidebar-hover-bg-dark);
   background-color: var(--background-color-dark);
   color: var(--text-color-dark);
 }
 
 .App {
-  padding: 20px;
   min-height: 100vh;
+}
+
+.main-layout {
+  display: flex;
+}
+
+.content {
+  flex-grow: 1;
+  padding: 1rem;
 }
 
 .board-container {
   display: flex;
   flex-direction: column;
+}
+
+.board-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem 0;
 }
 
 .new-task-button {
