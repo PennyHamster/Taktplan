@@ -84,11 +84,12 @@ app.get('/', (req, res) => {
 app.get('/api/admin/users', authenticateToken, authenticateAdmin, async (req, res) => {
   let client;
   try {
+    console.log('Attempting to get all users (admin)');
     client = await pool.connect();
     const result = await client.query('SELECT id, email, role FROM users ORDER BY id ASC');
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error('Error fetching users (admin):', err);
     res.status(500).json({ message: 'Internal Server Error' });
   } finally {
     if (client) {
