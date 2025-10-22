@@ -82,14 +82,18 @@ app.get('/', (req, res) => {
 
 // Admin endpoint to get all users
 app.get('/api/admin/users', authenticateToken, authenticateAdmin, async (req, res) => {
+  let client;
   try {
-    const client = await pool.connect();
+    client = await pool.connect();
     const result = await client.query('SELECT id, email, role FROM users ORDER BY id ASC');
     res.json(result.rows);
-    client.release();
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Internal Server Error' });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
@@ -107,8 +111,9 @@ app.put('/api/admin/users/:id/role', authenticateToken, authenticateAdmin, async
     return res.status(400).json({ message: 'Invalid role specified' });
   }
 
+  let client;
   try {
-    const client = await pool.connect();
+    client = await pool.connect();
     const result = await client.query(
       'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, email, role',
       [role, id]
@@ -119,7 +124,6 @@ app.put('/api/admin/users/:id/role', authenticateToken, authenticateAdmin, async
     }
 
     res.json(result.rows[0]);
-    client.release();
   } catch (err) {
     // Catch potential check constraint violation
     if (err.code === '23514') { // check_violation
@@ -127,40 +131,53 @@ app.put('/api/admin/users/:id/role', authenticateToken, authenticateAdmin, async
     }
     console.error(err);
     res.status(500).json({ message: 'Internal Server Error' });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
 // Get all users (manager only)
 app.get('/api/users', authenticateToken, authenticateManager, async (req, res) => {
+  let client;
   try {
-    const client = await pool.connect();
+    client = await pool.connect();
     // Exclude password_hash from the result
     const result = await client.query('SELECT id, email, role FROM users ORDER BY id ASC');
     res.json(result.rows);
-    client.release();
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Internal Server Error' });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
 app.get('/api/tasks', authenticateToken, authenticateManager, async (req, res) => {
+  let client;
   try {
-    const client = await pool.connect();
+    client = await pool.connect();
     const result = await client.query('SELECT * FROM tasks ORDER BY id ASC');
     res.json(result.rows);
-    client.release();
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Internal Server Error' });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
 // Get all tasks for the logged-in user
 app.get('/api/tasks/my-tasks', authenticateToken, async (req, res) => {
+  let client;
   try {
     const { userId, role } = req.user;
-    const client = await pool.connect();
+    client = await pool.connect();
     let result;
     if (role === 'manager' || role === 'admin') {
       // Managers and admins get all tasks
@@ -170,10 +187,13 @@ app.get('/api/tasks/my-tasks', authenticateToken, async (req, res) => {
       result = await client.query('SELECT * FROM tasks WHERE "assigneeId" = $1 ORDER BY id ASC', [userId]);
     }
     res.json(result.rows);
-    client.release();
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Internal Server Error' });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
@@ -187,14 +207,14 @@ app.post('/api/tasks', authenticateToken, async (req, res) => {
     return res.status(400).json({ message: 'assigneeId is required' });
   }
 
+  let client;
   try {
-    const client = await pool.connect();
+    client = await pool.connect();
     const result = await client.query(
       'INSERT INTO tasks (title, description, priority, status, "creatorId", "assigneeId") VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
       [title, description, priority, status, creatorId, assigneeId]
     );
     res.status(201).json(result.rows[0]);
-    client.release();
   } catch (err) {
     console.error(err);
     // Foreign key constraint error
@@ -202,6 +222,10 @@ app.post('/api/tasks', authenticateToken, async (req, res) => {
         return res.status(404).json({ message: 'Assignee user not found.' });
     }
     res.status(500).json({ message: 'Internal Server Error' });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
@@ -211,8 +235,9 @@ app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
   const { userId, role } = req.user;
   const { title, description, priority, status, assigneeId } = req.body;
 
+  let client;
   try {
-    const client = await pool.connect();
+    client = await pool.connect();
 
     // Build the update query dynamically
     const updateFields = [];
@@ -262,7 +287,6 @@ app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
     }
 
     res.json(result.rows[0]);
-    client.release();
   } catch (err) {
     console.error(err);
     // Foreign key constraint error
@@ -270,6 +294,10 @@ app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
         return res.status(404).json({ message: 'Assignee user not found.' });
     }
     res.status(500).json({ message: 'Internal Server Error' });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
@@ -277,8 +305,9 @@ app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
 app.delete('/api/tasks/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { userId, role } = req.user;
+    let client;
     try {
-        const client = await pool.connect();
+        client = await pool.connect();
 
         let result;
         // Managers can delete any task, otherwise only the creator can delete
@@ -289,15 +318,17 @@ app.delete('/api/tasks/:id', authenticateToken, async (req, res) => {
         }
 
         if (result.rowCount === 0) {
-            client.release();
             return res.status(404).json({ message: 'Task not found or you do not have permission to delete it' });
         }
 
-        client.release();
         res.status(204).send(); // No Content
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Internal Server Error' });
+    } finally {
+        if (client) {
+            client.release();
+        }
     }
 });
 
