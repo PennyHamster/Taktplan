@@ -11,7 +11,8 @@ const AdminPage = () => {
         try {
             setLoading(true);
             const data = await getAdminUsers();
-            setUsers(data);
+            // Handle both direct array and nested { users: [] } response
+            setUsers(Array.isArray(data) ? data : data.users || []);
             setError(null);
         } catch (err) {
             setError(err.message);
