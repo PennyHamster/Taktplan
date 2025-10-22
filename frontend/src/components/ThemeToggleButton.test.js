@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { ThemeContext } from '../ThemeContext';
+import { ThemeContext } from '../context/ThemeContext';
 import ThemeToggleButton from './ThemeToggleButton';
 
 describe('ThemeToggleButton', () => {

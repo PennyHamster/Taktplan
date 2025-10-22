@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { HashRouter } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import App from './App';
-import { ThemeContext } from './ThemeContext';
+import { ThemeContext } from './context/ThemeContext';
 import { getTasks, getUsers } from './api';
 
 // Mock the api and jwt-decode modules

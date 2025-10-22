@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, Outlet } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import Board from './components/Board';
 import Login from './components/Login';
@@ -11,11 +11,11 @@ import Sidebar from './components/Sidebar';
 import { ThemeContext } from './context/ThemeContext';
 import './App.css';
 
-const MainLayout = ({ children, userRole, handleLogout }) => (
+const MainLayout = ({ userRole, handleLogout }) => (
   <div className="main-layout">
     <Sidebar userRole={userRole} handleLogout={handleLogout} />
     <main className="content">
-      {children}
+      <Outlet />
     </main>
   </div>
 );
@@ -72,20 +72,21 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login onLogin={onLogin} />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/" element={
-          <ProtectedRoute>
-            <MainLayout userRole={userRole} handleLogout={handleLogout}>
-              <Board userRole={userRole} />
-            </MainLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/admin" element={
-          <AdminRoute>
-            <MainLayout userRole={userRole} handleLogout={handleLogout}>
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <MainLayout userRole={userRole} handleLogout={handleLogout} />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Board userRole={userRole} />} />
+          <Route path="admin" element={
+            <AdminRoute>
               <AdminPage />
-            </MainLayout>
-          </AdminRoute>
-        } />
+            </AdminRoute>
+          } />
+        </Route>
       </Routes>
     </div>
   );
